@@ -24,23 +24,32 @@ namespace KohdAndArt.MediaTransfer
     /// </summary>
     public partial class MainWindow : Window
     {
-        // Some default values
-        //
+        #region Constants
         const string DEFAULTSOURCEFOLDER = @"G:\";
         const string DEFAULTDESTINATIONFOLDER = @"G:\Img\";
+        #endregion
 
-        // Settings
-        //
+        #region Settings
         private string _sourceFolder = Properties.Settings.Default.SourceFolder;
         private string _destinationFolder = Properties.Settings.Default.DestinationFolder;
         private bool _removeSourceFileAfterCopy = Properties.Settings.Default.RemoveSourceFilesAfterCopy;
         private bool _createEditsFolder = Properties.Settings.Default.CreateEditsFolder;
         private bool _createFinalFolder = Properties.Settings.Default.CreateFinalFolder;
         private string _finalDestinationFolderName = Properties.Settings.Default.FinalDestinationFolderName;
+        #endregion
 
+        #region Constructor
         public MainWindow()
         {
             InitializeComponent();
+
+            InitializeControls();
+        }
+        #endregion
+
+        #region Initialization Routines
+        private void InitializeControls()
+        {
             progressBar.Visibility = System.Windows.Visibility.Hidden;
             progressBar.IsIndeterminate = false;
             textBlockProgress.Text = String.Empty;
@@ -51,7 +60,9 @@ namespace KohdAndArt.MediaTransfer
             checkBoxCreateFolderFinal.IsChecked = _createFinalFolder ? true : false;
             textBoxDestFolderName.Text = _finalDestinationFolderName;
         }
+        #endregion
 
+        #region Event Handlers
         private void buttonSourceFolder_Click(object sender, RoutedEventArgs e)
         {
             _sourceFolder = GetFolder(_sourceFolder);
@@ -66,33 +77,6 @@ namespace KohdAndArt.MediaTransfer
             textBoxDestinationFolder.Text = _destinationFolder;
             Properties.Settings.Default.DestinationFolder = _destinationFolder;
             Properties.Settings.Default.Save();
-        }
-
-        private string GetFolder(string initialFolder)
-        {
-            var selectedFolder = String.Empty;
-
-            var dlg = new CommonOpenFileDialog();
-            dlg.Title = "Select Folder";
-            dlg.IsFolderPicker = true;
-            dlg.InitialDirectory = initialFolder;
-
-            dlg.AddToMostRecentlyUsedList = false;
-            dlg.AllowNonFileSystemItems = false;
-            dlg.DefaultDirectory = initialFolder;
-            dlg.EnsureFileExists = true;
-            dlg.EnsurePathExists = true;
-            dlg.EnsureReadOnly = false;
-            dlg.EnsureValidNames = true;
-            dlg.Multiselect = false;
-            dlg.ShowPlacesList = true;
-
-            if (dlg.ShowDialog() == CommonFileDialogResult.Ok)
-            {
-                selectedFolder = dlg.FileName;
-            }
-
-            return selectedFolder;
         }
 
         private async void buttonStart_Click(object sender, RoutedEventArgs e)
@@ -178,71 +162,9 @@ namespace KohdAndArt.MediaTransfer
             Application.Current.Shutdown();
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="sourceFile"></param>
-        /// <param name="destinationPathRoot"></param>
-        /// <returns></returns>
-        private DestinationPaths BuildDestinationPaths(FileInfo sourceFile, string destinationPathRoot)
-        {
-            int year = sourceFile.CreationTime.Year;
-            int month = sourceFile.CreationTime.Month;
-            string monthName = GetMonthName(month);
-            int day = sourceFile.CreationTime.Day;
-            string filename = sourceFile.Name;
-
-            string numericDate = String.Format("{0}{1}{2}", 
-                                               year.ToString("D4"), 
-                                               month.ToString("D2"), 
-                                               day.ToString("D2"));
-
-            var output = new DestinationPaths();
-
-
-            // Example Path: G:\Images\2016\May\20160528\Originals\file.jpg
-            string finalFolderPath = Properties.Settings.Default.FinalDestinationFolderName;
-            output.OriginalsPath = String.Format(@"{0}\{1}\{2}\{3}\{4}\{5}",
-                                            destinationPathRoot,
-                                            year, monthName, numericDate, finalFolderPath, filename);
-
-            output.EditsPath = String.Format(@"{0}\{1}\{2}\{3}\{4}",
-                                            destinationPathRoot,
-                                            year, monthName, numericDate, "Edits");
-
-            output.FinalPath = String.Format(@"{0}\{1}\{2}\{3}\{4}",
-                                            destinationPathRoot,
-                                            year, monthName, numericDate, "Final");
-
-            return output;
-        }
-
-
-        private void ShowProgressBar(bool setVisible)
-        {
-            progressBar.Visibility = setVisible ? System.Windows.Visibility.Visible : 
-                                                  System.Windows.Visibility.Hidden;
-        }
-        private void UpdateStatus(string text)
-        {
-            string currentText = textBlockProgress.Text;
-            StringBuilder sb = new StringBuilder();
-            sb.Append(currentText);
-            sb.AppendLine(text);
-            textBlockProgress.Text = sb.ToString();
-            scrollViewer.ScrollToEnd();
-        }
-
         private void buttonClearStatusPanel_Click(object sender, RoutedEventArgs e)
         {
             textBlockProgress.Text = string.Empty;
-        }
-
-        private string GetMonthName(int month)
-        {
-            System.Globalization.DateTimeFormatInfo mfi = new
-            System.Globalization.DateTimeFormatInfo();
-            return mfi.GetMonthName(month).ToString();
         }
 
         private void checkBoxRemoveSourceFile_Checked(object sender, RoutedEventArgs e)
@@ -345,6 +267,99 @@ namespace KohdAndArt.MediaTransfer
         {
 
         }
+        #endregion
+
+        #region Private Methods
+        private string GetFolder(string initialFolder)
+        {
+            var selectedFolder = String.Empty;
+
+            var dlg = new CommonOpenFileDialog();
+            dlg.Title = "Select Folder";
+            dlg.IsFolderPicker = true;
+            dlg.InitialDirectory = initialFolder;
+
+            dlg.AddToMostRecentlyUsedList = false;
+            dlg.AllowNonFileSystemItems = false;
+            dlg.DefaultDirectory = initialFolder;
+            dlg.EnsureFileExists = true;
+            dlg.EnsurePathExists = true;
+            dlg.EnsureReadOnly = false;
+            dlg.EnsureValidNames = true;
+            dlg.Multiselect = false;
+            dlg.ShowPlacesList = true;
+
+            if (dlg.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+                selectedFolder = dlg.FileName;
+            }
+
+            return selectedFolder;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sourceFile"></param>
+        /// <param name="destinationPathRoot"></param>
+        /// <returns></returns>
+        private DestinationPaths BuildDestinationPaths(FileInfo sourceFile, string destinationPathRoot)
+        {
+            int year = sourceFile.CreationTime.Year;
+            int month = sourceFile.CreationTime.Month;
+            string monthName = GetMonthName(month);
+            int day = sourceFile.CreationTime.Day;
+            string filename = sourceFile.Name;
+
+            string numericDate = String.Format("{0}{1}{2}",
+                                               year.ToString("D4"),
+                                               month.ToString("D2"),
+                                               day.ToString("D2"));
+
+            var output = new DestinationPaths();
+
+
+            // Example Path: G:\Images\2016\May\20160528\Originals\file.jpg
+            string finalFolderPath = Properties.Settings.Default.FinalDestinationFolderName;
+            output.OriginalsPath = String.Format(@"{0}\{1}\{2}\{3}\{4}\{5}",
+                                            destinationPathRoot,
+                                            year, monthName, numericDate, finalFolderPath, filename);
+
+            output.EditsPath = String.Format(@"{0}\{1}\{2}\{3}\{4}",
+                                            destinationPathRoot,
+                                            year, monthName, numericDate, "Edits");
+
+            output.FinalPath = String.Format(@"{0}\{1}\{2}\{3}\{4}",
+                                            destinationPathRoot,
+                                            year, monthName, numericDate, "Final");
+
+            return output;
+        }
+
+
+        private void ShowProgressBar(bool setVisible)
+        {
+            progressBar.Visibility = setVisible ? System.Windows.Visibility.Visible :
+                                                  System.Windows.Visibility.Hidden;
+        }
+
+        private void UpdateStatus(string text)
+        {
+            string currentText = textBlockProgress.Text;
+            StringBuilder sb = new StringBuilder();
+            sb.Append(currentText);
+            sb.AppendLine(text);
+            textBlockProgress.Text = sb.ToString();
+            scrollViewer.ScrollToEnd();
+        }
+
+        private string GetMonthName(int month)
+        {
+            System.Globalization.DateTimeFormatInfo mfi = new
+            System.Globalization.DateTimeFormatInfo();
+            return mfi.GetMonthName(month).ToString();
+        }
+        #endregion
     }
 
     public class DestinationPaths
