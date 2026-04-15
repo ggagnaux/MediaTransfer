@@ -8,13 +8,15 @@
  */
 
 
+using Microsoft.WindowsAPICodePack.Dialogs;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
-using Microsoft.WindowsAPICodePack.Dialogs;
 using System.Windows.Controls;
 
 namespace KohdAndArt.MediaTransfer
@@ -30,12 +32,7 @@ namespace KohdAndArt.MediaTransfer
         #endregion
 
         #region Settings
-        private string _sourceFolder = Properties.Settings.Default.SourceFolder;
-        private string _destinationFolder = Properties.Settings.Default.DestinationFolder;
-        private bool _removeSourceFileAfterCopy = Properties.Settings.Default.RemoveSourceFilesAfterCopy;
-        private bool _createEditsFolder = Properties.Settings.Default.CreateEditsFolder;
-        private bool _createFinalFolder = Properties.Settings.Default.CreateFinalFolder;
-        private string _finalDestinationFolderName = Properties.Settings.Default.FinalDestinationFolderName;
+        private MediaTransferSettings _settings = new MediaTransferSettings();
         #endregion
 
         #region Constructor
@@ -43,46 +40,152 @@ namespace KohdAndArt.MediaTransfer
         {
             InitializeComponent();
 
+            InitializeLogging();
+
+            // Read in existing settings and setup controls
+            _settings.Load();
             InitializeControls();
         }
         #endregion
 
         #region Initialization Routines
+        private void InitializeLogging()
+        {
+            var traceStream = File.Open("MediaTransfer.log",
+                                           FileMode.Append, FileAccess.Write, FileShare.Read);
+            var traceListener =
+                        new TextWriterTraceListener(traceStream);
+            Trace.Listeners.Add(traceListener);
+            Trace.WriteLine("");
+            Trace.WriteLine("------------START------------");
+            Trace.WriteLine("Trace Started " + DateTime.Now.ToString());
+        }
+
         private void InitializeControls()
         {
             progressBar.Visibility = System.Windows.Visibility.Hidden;
             progressBar.IsIndeterminate = false;
             textBlockProgress.Text = String.Empty;
-            textBoxSourceFolder.Text = _sourceFolder;
-            textBoxDestinationFolder.Text = _destinationFolder;
-            checkBoxRemoveSourceFile.IsChecked = _removeSourceFileAfterCopy ? true : false;
-            checkBoxCreateFolderEdit.IsChecked = _createEditsFolder ? true : false;
-            checkBoxCreateFolderFinal.IsChecked = _createFinalFolder ? true : false;
-            textBoxDestFolderName.Text = _finalDestinationFolderName;
+            textBoxSourceFolder.Text = _settings.SourceFolder;
+            textBoxDestinationFolder.Text = _settings.DestinationFolder;
+            checkBoxRemoveSourceFile.IsChecked = _settings.RemoveSourceFileAfterCopy ? true : false;
+            checkBoxCreateFolderEdit.IsChecked = _settings.CreateEditsFolder ? true : false;
+            checkBoxCreateFolderFinal.IsChecked = _settings.CreateFinalFolder ? true : false;
+            textBoxDestFolderName.Text = _settings.DestinationFolderName;
         }
         #endregion
 
         #region Event Handlers
         private void buttonSourceFolder_Click(object sender, RoutedEventArgs e)
         {
-            _sourceFolder = GetFolder(_sourceFolder);
-            textBoxSourceFolder.Text = _sourceFolder;
-            Properties.Settings.Default.SourceFolder = _sourceFolder;
-            Properties.Settings.Default.Save();
+            _settings.SourceFolder = GetFolder(_settings.SourceFolder);
+            textBoxSourceFolder.Text = _settings.SourceFolder;
+            _settings.Save();
         }
 
         private void buttonDestinationFolder_Click(object sender, RoutedEventArgs e)
         {
-            _destinationFolder = GetFolder(_destinationFolder);
-            textBoxDestinationFolder.Text = _destinationFolder;
-            Properties.Settings.Default.DestinationFolder = _destinationFolder;
-            Properties.Settings.Default.Save();
+            _settings.DestinationFolder = GetFolder(_settings.DestinationFolder);
+            textBoxDestinationFolder.Text = _settings.DestinationFolder;
+            _settings.Save();
         }
 
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        ///// <param name="sender"></param>
+        ///// <param name="e"></param>
+        //private async void buttonStart_Click(object sender, RoutedEventArgs e)
+        //{
+        //    buttonStart.IsEnabled = false;
+        //    var currentFileCount = 0;
+
+        //    try
+        //    {
+        //        ShowProgressBar(true);
+
+        //        IEnumerable<string> fileList = Directory.EnumerateFiles(textBoxSourceFolder.Text);
+        //        int fileCount = fileList.Count<string>();
+        //        progressBar.Maximum = fileCount;
+
+        //        foreach (string filename in fileList)
+        //        {
+        //            var dateTaken = GetDateTakenFromImage(filename);
+
+        //            using (FileStream SourceStream = File.Open(filename, FileMode.Open))
+        //            {
+        //                // Check if file already exists in destination folder
+        //                var destinationPathRoot = textBoxDestinationFolder.Text;
+        //                var fi = new FileInfo(filename);
+
+        //                var paths = BuildDestinationPaths(fi, dateTaken, destinationPathRoot);
+
+        //                // This the folder where the files will be copied.
+        //                var destinationFolderAndFile = paths.OriginalsPath;
+        //                var lastIndex = destinationFolderAndFile.LastIndexOf('\\');
+        //                //string finalPathOnly = destinationFolderAndFile.Substring(lastIndex);
+
+        //                if (!File.Exists(destinationFolderAndFile))
+        //                {
+        //                    // Create the target directory if it doesn't exist already
+        //                    var fi2 = new FileInfo(destinationFolderAndFile);
+        //                    var di = Directory.CreateDirectory(fi2.DirectoryName);
+
+        //                    // Create the other directories (No files will be copied into them)
+        //                    if (_settings.CreateEditsFolder)
+        //                        di = Directory.CreateDirectory(paths.EditsPath);
+        //                    if (_settings.CreateFinalFolder)
+        //                        di = Directory.CreateDirectory(paths.FinalPath);
+
+        //                    using (FileStream DestinationStream = File.Create(destinationFolderAndFile))
+        //                    {
+        //                        UpdateStatus(String.Format("Copying '{0}'", filename));
+        //                        await SourceStream.CopyToAsync(DestinationStream);
+
+        //                        progressBar.Value = ++currentFileCount;
+        //                        var status = string.Format("'{0}' copied successfully.", filename);
+        //                        UpdateStatus(status);
+        //                    }
+        //                }
+        //                else
+        //                {
+        //                    progressBar.Value = ++currentFileCount;
+        //                    var text = string.Format("'{0}' already exists.  No work done.", destinationFolderAndFile);
+        //                    UpdateStatus(text);
+        //                }
+        //            }
+
+        //            if (_settings.RemoveSourceFileAfterCopy)
+        //            {
+        //                File.Delete(filename);
+        //                UpdateStatus(string.Format("'{0}' removed from source.", filename));
+        //            }
+        //        }
+
+
+        //        ShowProgressBar(false);
+        //        UpdateStatus(String.Format("{0} files {1}.", currentFileCount, _settings.RemoveSourceFileAfterCopy ? "moved" : "copied"));
+        //        UpdateStatus("File Transfer Complete.");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        UpdateStatus(ex.Message.ToString());
+        //    }
+        //    finally
+        //    {
+        //        buttonStart.IsEnabled = true;
+        //    }
+        //}
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void buttonStart_Click(object sender, RoutedEventArgs e)
         {
             buttonStart.IsEnabled = false;
-            int currentFileCount = 0;
+            var currentFileCount = 0;
 
             try
             {
@@ -92,59 +195,77 @@ namespace KohdAndArt.MediaTransfer
                 int fileCount = fileList.Count<string>();
                 progressBar.Maximum = fileCount;
 
+                //
+                // TODO
+                // Find pairs of files (RAW + JPEG)
+                // Get the datestamp for the JPEG and use that for the RAW's datestamp
+                // In some cases, the GetDateTakenFromImage() function below will throw
+                // an exception if it tries to load a non-JPEG file
+                //
+            
                 foreach (string filename in fileList)
                 {
-                    using (FileStream SourceStream = File.Open(filename, FileMode.Open))
+                    var dateTaken = DateTime.Now;
+                    try
                     {
-                        // Check if file already exists in destination folder
-                        string destinationPathRoot = textBoxDestinationFolder.Text;
-                        FileInfo fi = new FileInfo(filename);
+                        dateTaken = (DateTime)GetDateTakenFromImage(filename);
+                    }
+                    catch
+                    {
+                    }
 
-                        DestinationPaths paths = BuildDestinationPaths(fi, destinationPathRoot);
+                    // Check if file already exists in destination folder
+                    var destinationPathRoot = textBoxDestinationFolder.Text;
+                    var fi = new FileInfo(filename);
 
-                        // This the folder where the files will be copied.
-                        string destinationFolderAndFile = paths.OriginalsPath;
-                        string finalPathOnly = destinationFolderAndFile.Substring(destinationFolderAndFile.LastIndexOf('\\'));
+                    var paths = BuildDestinationPaths(fi, dateTaken, destinationPathRoot);
 
-                        if (!File.Exists(destinationFolderAndFile))
+                    // This the folder where the files will be copied.
+                    var destinationFolderAndFile = paths.OriginalsPath;
+                    var lastIndex = destinationFolderAndFile.LastIndexOf('\\');
+                    //string finalPathOnly = destinationFolderAndFile.Substring(lastIndex);
+
+                    if (!File.Exists(destinationFolderAndFile))
+                    {
+                        // Create the target directory if it doesn't exist already
+                        var fi2 = new FileInfo(destinationFolderAndFile);
+                        var di = Directory.CreateDirectory(fi2.DirectoryName);
+
+                        // Create the other directories (No files will be copied into them)
+                        if (_settings.CreateEditsFolder)
+                            di = Directory.CreateDirectory(paths.EditsPath);
+                        if (_settings.CreateFinalFolder)
+                            di = Directory.CreateDirectory(paths.FinalPath);
+
+                        using (FileStream SourceStream = File.Open(filename, FileMode.Open))
                         {
-                            // Create the target directory if it doesn't exist already
-                            FileInfo fi2 = new FileInfo(destinationFolderAndFile);
-                            DirectoryInfo di = Directory.CreateDirectory(fi2.DirectoryName);
-
-                            // Create the other directories (No files will be copied into them)
-                            if (_createEditsFolder) 
-                                di = Directory.CreateDirectory(paths.EditsPath);
-                            if (_createFinalFolder)
-                                di = Directory.CreateDirectory(paths.FinalPath);
-
                             using (FileStream DestinationStream = File.Create(destinationFolderAndFile))
                             {
                                 UpdateStatus(String.Format("Copying '{0}'", filename));
                                 await SourceStream.CopyToAsync(DestinationStream);
 
                                 progressBar.Value = ++currentFileCount;
-                                string status = string.Format("'{0}' copied successfully.", filename);
+                                var status = string.Format("'{0}' copied successfully.", filename);
                                 UpdateStatus(status);
                             }
                         }
-                        else
-                        {
-                            string text = string.Format("'{0}' already exists.  No work done.", destinationFolderAndFile);
-                            UpdateStatus(text);
-                        }
+                    }
+                    else
+                    {
+                        progressBar.Value = ++currentFileCount;
+                        var text = string.Format("'{0}' already exists.  No work done.", destinationFolderAndFile);
+                        UpdateStatus(text);
                     }
 
-                    if (_removeSourceFileAfterCopy)
+                    if (_settings.RemoveSourceFileAfterCopy)
                     {
                         File.Delete(filename);
                         UpdateStatus(string.Format("'{0}' removed from source.", filename));
                     }
                 }
 
-
                 ShowProgressBar(false);
-                UpdateStatus(String.Format("{0} files {1}.", currentFileCount, _removeSourceFileAfterCopy ? "moved" : "copied"));
+                UpdateStatus(String.Format("{0} files {1}.", currentFileCount, _settings.RemoveSourceFileAfterCopy ? "moved" : "copied"));
                 UpdateStatus("File Transfer Complete.");
             }
             catch (Exception ex)
@@ -157,6 +278,13 @@ namespace KohdAndArt.MediaTransfer
             }
         }
 
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void buttonClose_Click(object sender, RoutedEventArgs e)
         {
             Application.Current.Shutdown();
@@ -179,9 +307,8 @@ namespace KohdAndArt.MediaTransfer
 
         private void CheckboxRemoveSourceHandler(CheckBox checkBox)
         {
-            _removeSourceFileAfterCopy = checkBoxRemoveSourceFile.IsChecked.Value;
-            Properties.Settings.Default.RemoveSourceFilesAfterCopy = _removeSourceFileAfterCopy;
-            Properties.Settings.Default.Save();
+            _settings.RemoveSourceFileAfterCopy = checkBoxRemoveSourceFile.IsChecked.Value;
+            _settings.Save();
         }
 
         private void textBoxSourceFolder_LostFocus(object sender, RoutedEventArgs e)
@@ -191,7 +318,7 @@ namespace KohdAndArt.MediaTransfer
 
         private void TextboxSourceHandler(TextBox textBox)
         {
-            _sourceFolder = textBox.Text;
+            _settings.SourceFolder = textBox.Text;
         }
 
         private void textBoxDestinationFolder_LostFocus(object sender, RoutedEventArgs e)
@@ -201,13 +328,13 @@ namespace KohdAndArt.MediaTransfer
 
         private void TextboxDestinationHandler(TextBox textBox)
         {
-            _destinationFolder = textBox.Text;
+            _settings.DestinationFolder = textBox.Text;
         }
 
         private void buttonAbout_Click(object sender, RoutedEventArgs e)
         {
             // Instantiate the dialog box
-            AboutBoxWindow dlg = new AboutBoxWindow();
+            var dlg = new AboutBoxWindow();
 
             // Configure the dialog box
             dlg.Owner = this;
@@ -228,9 +355,8 @@ namespace KohdAndArt.MediaTransfer
 
         private void CheckboxCreateEditsFolderHandler(CheckBox checkBox)
         {
-            _createEditsFolder = checkBoxCreateFolderEdit.IsChecked.Value;
-            Properties.Settings.Default.CreateEditsFolder = _createEditsFolder;
-            Properties.Settings.Default.Save();
+            _settings.CreateEditsFolder = checkBoxCreateFolderEdit.IsChecked.Value;
+            _settings.Save();
         }
 
 
@@ -246,9 +372,8 @@ namespace KohdAndArt.MediaTransfer
 
         private void CheckboxCreateFinalFolderHandler(CheckBox checkBox)
         {
-            _createFinalFolder = checkBoxCreateFolderFinal.IsChecked.Value;
-            Properties.Settings.Default.CreateFinalFolder = _createFinalFolder;
-            Properties.Settings.Default.Save();
+            _settings.CreateFinalFolder = checkBoxCreateFolderFinal.IsChecked.Value;
+            _settings.Save();
         }
 
         private void textBoxDestFolderName_LostFocus(object sender, RoutedEventArgs e)
@@ -258,9 +383,9 @@ namespace KohdAndArt.MediaTransfer
 
         private void TextboxFinalDestFolderHandler(TextBox textBox)
         {
-            _finalDestinationFolderName = textBox.Text;
-            Properties.Settings.Default.FinalDestinationFolderName = textBox.Text;
-            Properties.Settings.Default.Save();
+            _settings.DestinationFolderName = textBox.Text;
+            _settings.Save();
+
         }
 
         private void textBoxDestinationFolder_TextChanged(object sender, TextChangedEventArgs e)
@@ -303,24 +428,28 @@ namespace KohdAndArt.MediaTransfer
         /// <param name="sourceFile"></param>
         /// <param name="destinationPathRoot"></param>
         /// <returns></returns>
-        private DestinationPaths BuildDestinationPaths(FileInfo sourceFile, string destinationPathRoot)
+        private DestinationPaths BuildDestinationPaths(FileInfo sourceFile, DateTime dateTaken, string destinationPathRoot)
         {
-            int year = sourceFile.CreationTime.Year;
-            int month = sourceFile.CreationTime.Month;
-            string monthName = GetMonthName(month);
-            int day = sourceFile.CreationTime.Day;
-            string filename = sourceFile.Name;
+            //var year = sourceFile.LastWriteTime.Year;
+            //var month = sourceFile.LastWriteTime.Month;
+            //var monthName = GetMonthName(month);
+            //var day = sourceFile.LastWriteTime.Day;
+            //var filename = sourceFile.Name;
 
-            string numericDate = String.Format("{0}{1}{2}",
-                                               year.ToString("D4"),
-                                               month.ToString("D2"),
-                                               day.ToString("D2"));
+            // Get some values from the dateTaken object
+            var year = dateTaken.Year;
+            var month = dateTaken.Month;
+            var monthName = GetMonthName(month);
+            var day = dateTaken.Day;
+            var filename = sourceFile.Name;
+
+            var numericDate = $"{year.ToString("D4")}{month.ToString("D2")}{day.ToString("D2")}";
 
             var output = new DestinationPaths();
 
 
             // Example Path: G:\Images\2016\May\20160528\Originals\file.jpg
-            string finalFolderPath = Properties.Settings.Default.FinalDestinationFolderName;
+            var finalFolderPath = Properties.Settings.Default.FinalDestinationFolderName;
             output.OriginalsPath = String.Format(@"{0}\{1}\{2}\{3}\{4}\{5}",
                                             destinationPathRoot,
                                             year, monthName, numericDate, finalFolderPath, filename);
@@ -333,9 +462,55 @@ namespace KohdAndArt.MediaTransfer
                                             destinationPathRoot,
                                             year, monthName, numericDate, "Final");
 
+            //var temp = GetDateTakenFromImage(sourceFile.FullName);
+
             return output;
         }
 
+
+        // We init this once so that if the function is repeatedly called
+        // it isn't stressing the garbage man
+        private static Regex r = new Regex(":");
+
+        // Retrieves the datetime WITHOUT loading the whole image
+        private DateTime? GetDateTakenFromImage(string path)
+        {
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read))
+            {
+                try
+                {
+                    using (System.Drawing.Image myImage = System.Drawing.Image.FromStream(fs, false, false))
+                    {
+                        System.Drawing.Imaging.PropertyItem propItem = myImage.GetPropertyItem(36867);
+                        string dateTaken = r.Replace(Encoding.UTF8.GetString(propItem.Value), "-", 2);
+                        return DateTime.Parse(dateTaken);
+                    }
+                } 
+                catch (Exception ex)
+                {
+                    var msg = ex.Message;
+
+                }
+                return null;
+            }
+        }
+
+        private DateTime GetDateTaken(string path)
+        {
+            System.Drawing.Image myImage = System.Drawing.Image.FromFile(path);
+            System.Drawing.Imaging.PropertyItem propItem = myImage.GetPropertyItem(306);
+            DateTime dtaken;
+
+            //Convert date taken metadata to a DateTime object
+            string sdate = Encoding.UTF8.GetString(propItem.Value).Trim();
+            string secondhalf = sdate.Substring(sdate.IndexOf(" "), (sdate.Length - sdate.IndexOf(" ")));
+            string firsthalf = sdate.Substring(0, 10);
+            firsthalf = firsthalf.Replace(":", "-");
+            sdate = firsthalf + secondhalf;
+            dtaken = DateTime.Parse(sdate);
+
+            return dtaken;
+        }
 
         private void ShowProgressBar(bool setVisible)
         {
@@ -345,10 +520,12 @@ namespace KohdAndArt.MediaTransfer
 
         private void UpdateStatus(string text)
         {
-            string currentText = textBlockProgress.Text;
-            StringBuilder sb = new StringBuilder();
+            var currentText = textBlockProgress.Text;
+            var sb = new StringBuilder();
             sb.Append(currentText);
             sb.AppendLine(text);
+
+            //this.UIThread(() => this.textBlockProgress.Text = sb.ToString());
             textBlockProgress.Text = sb.ToString();
             scrollViewer.ScrollToEnd();
         }
@@ -360,6 +537,13 @@ namespace KohdAndArt.MediaTransfer
             return mfi.GetMonthName(month).ToString();
         }
         #endregion
+
+        private void MainForm_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            Trace.WriteLine("Trace stopped " + DateTime.Now.ToString());
+            Trace.WriteLine("------------FINISH------------");
+            Trace.Flush();
+        }
     }
 
     public class DestinationPaths
@@ -369,4 +553,3 @@ namespace KohdAndArt.MediaTransfer
         public string FinalPath { get; set; }
     }
 }
- 

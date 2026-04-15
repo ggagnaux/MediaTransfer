@@ -1,4 +1,4 @@
-﻿<Window x:Class="KohdAndArt.MediaTransfer.MainWindow"
+﻿<Window x:Name="MainForm" x:Class="KohdAndArt.MediaTransfer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -6,12 +6,18 @@
         xmlns:local="clr-namespace:MediaTransfer"
         mc:Ignorable="d"
         Title="Kohd &amp; Art - Media Transfer Utility" 
-        Height="668.333" Width="841.667" 
+        Height="668.333" Width="982.667" 
         BorderBrush="White" 
         ResizeMode="CanMinimize" 
         Icon="KohdAndArt.png"
-        WindowStartupLocation="CenterScreen">
-    <Grid Margin="0,0,0,0" Background="LightGray" ToolTip="Clear Status Panel">
+        WindowStartupLocation="CenterScreen" Closing="MainForm_Closing">
+    <Grid Margin="0,0,0,0" ToolTip="Clear Status Panel">
+        <Grid.Background>
+            <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                <GradientStop Color="#FFB2B2B2" Offset="0"/>
+                <GradientStop Color="#FFFFFEFE" Offset="1"/>
+            </LinearGradientBrush>
+        </Grid.Background>
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
             <ColumnDefinition Width="3*"/>
@@ -40,16 +46,16 @@
         <Grid HorizontalAlignment="Left" Height="49" Margin="10,176,0,0" VerticalAlignment="Top" Width="814" Grid.ColumnSpan="2">
             <Label x:Name="labelStaus" Content="Status" HorizontalAlignment="Left" Height="27" Margin="0,22,0,0" VerticalAlignment="Top" Width="95" FontSize="14" FontWeight="Bold"/>
         </Grid>
-        <GroupBox x:Name="groupBox" Header="Select Directories" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Height="161" Width="339" Grid.ColumnSpan="2">
+        <GroupBox x:Name="groupBox" Header="Select Directories" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Height="161" Width="482" Grid.ColumnSpan="2">
             <Grid HorizontalAlignment="Left" Height="120" Margin="10,10,0,0" VerticalAlignment="Top" Width="315">
-                <TextBox x:Name="textBoxSourceFolder" Height="20" Margin="79,10,10,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" LostFocus="textBoxSourceFolder_LostFocus"/>
+                <TextBox x:Name="textBoxSourceFolder" Height="20" Margin="79,10,-137,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" LostFocus="textBoxSourceFolder_LostFocus"/>
 
                 <Button x:Name="buttonSourceFolder" Content="Source" HorizontalAlignment="Left" Margin="-2,4,0,0" VerticalAlignment="Top" Width="76" Height="29" Click="buttonSourceFolder_Click"/>
                 <Button x:Name="buttonDestinationFolder" Content="Destination" HorizontalAlignment="Left" Margin="-2,43,0,0" VerticalAlignment="Top" Width="76" Height="29" Click="buttonDestinationFolder_Click"/>
-                <TextBox x:Name="textBoxDestinationFolder" Height="20" Margin="79,48,10,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" LostFocus="textBoxDestinationFolder_LostFocus" TextChanged="textBoxDestinationFolder_TextChanged"/>
+                <TextBox x:Name="textBoxDestinationFolder" Height="20" Margin="79,48,-137,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" LostFocus="textBoxDestinationFolder_LostFocus" TextChanged="textBoxDestinationFolder_TextChanged"/>
             </Grid>
         </GroupBox>
-        <GroupBox x:Name="groupBox1" Header="Options" HorizontalAlignment="Left" Height="161" Margin="155,10,0,0" VerticalAlignment="Top" Width="297" Grid.Column="1">
+        <GroupBox x:Name="groupBox1" Header="Options" HorizontalAlignment="Left" Height="161" Margin="267,10,0,0" VerticalAlignment="Top" Width="297" Grid.Column="1">
             <Grid HorizontalAlignment="Left" Height="122" Margin="10,10,0,0" VerticalAlignment="Top" Width="267">
                 <CheckBox x:Name="checkBoxRemoveSourceFile" Content="Remove Source File After Copy" HorizontalAlignment="Left" Height="17" VerticalAlignment="Top" Width="194" Checked="checkBoxRemoveSourceFile_Checked" Unchecked="checkBoxRemoveSourceFile_Unchecked" RenderTransformOrigin="0.5,0.5" Background="White" Foreground="Black"/>
                 <CheckBox x:Name="checkBoxCreateFolderEdit" Content="Create 'Edits' folder" HorizontalAlignment="Left" Margin="0,32,0,0" VerticalAlignment="Top" Checked="checkBoxCreateFolderEdit_Checked" Unchecked="checkBoxCreateFolderEdit_Unchecked"/>
